@@ -29,9 +29,15 @@ model = GPT2LMHeadModel.from_pretrained(model_name)
 tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 model.resize_token_embeddings(len(tokenizer))
 
-# Ensure that we're using the GPU if available
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.to(device)
+# Move the model to GPU if available
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+    model.to(device)
+    print(f"Using GPU: {torch.cuda.get_device_name(0)}")
+else:
+    device = torch.device("cpu")
+    print("Using CPU")
+
 
 # Tokenize the dataset
 def tokenize_function(examples):
@@ -49,8 +55,10 @@ training_args = TrainingArguments(
     save_total_limit=2,
     logging_dir="./logs",
     evaluation_strategy="steps",
-    eval_steps=5000,  # Optional: add evaluation during training
-    fp16=True,  # Enable mixed-precision training to speed up and reduce memory usage
+    eval_steps=5000,
+    fp16=True,  # Mixed precision (fp16) helps in using GPU efficiently
+    dataloader_pin_memory=True,  # Pin memory for DataLoader to improve GPU utilization
+    report_to="none",  # Reduce noise
 )
 
 # Initialize the Trainer
